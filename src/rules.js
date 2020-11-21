@@ -31,7 +31,8 @@ const block = {
   lheading: /^([^\n]+)\n {0,3}(=+|-+) *(?:\n+|$)/,
   // regex template, placeholders will be replaced according to different paragraph
   // interruption rules of commonmark and the original markdown spec:
-  _paragraph: /^([^\n]+(?:\n(?!hr|heading|lheading|blockquote|fences|list|html)[^\n]+)*)/,
+  _paragraphold: /^([^\n]+(?:\n(?!hr|heading|lheading|blockquote|fences|list|html)[^\n]+)*)/,
+  _paragraph: /^[^\n]+(?:(?:\n[^\n]+)*?\n((hr)|(heading)|(lheading)|(blockquote)|(fences)|(list)|(html))|(?:\n[^\n]+)*)/,
   text: /^[^\n]+/
 };
 
@@ -82,8 +83,19 @@ block.paragraph = edit(block._paragraph)
   .replace('tag', block._tag) // pars can be interrupted by type (6) html blocks
   .getRegex();
 
+block.paragraphold = edit(block._paragraphold)
+  .replace('hr', block.hr)
+  .replace('heading', ' {0,3}#{1,6} ')
+  .replace('|lheading', '') // setex headings don't interrupt commonmark paragraphs
+  .replace('blockquote', ' {0,3}>')
+  .replace('fences', ' {0,3}(?:`{3,}(?=[^`\\n]*\\n)|~{3,})[^\\n]*\\n')
+  .replace('list', ' {0,3}(?:[*+-]|1[.)]) ') // only lists starting from 1 can interrupt
+  .replace('html', '</?(?:tag)(?: +|\\n|/?>)|<(?:script|pre|style|!--)')
+  .replace('tag', block._tag) // pars can be interrupted by type (6) html blocks
+  .getRegex();
+
 block.blockquote = edit(block.blockquote)
-  .replace('paragraph', block.paragraph)
+  .replace('paragraph', block.paragraphold)
   .getRegex();
 
 /**

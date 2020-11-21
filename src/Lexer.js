@@ -121,7 +121,7 @@ module.exports = class Lexer {
    */
   blockTokens(src, tokens = [], top = true) {
     src = src.replace(/^ +$/gm, '');
-    let token, i, l, lastToken;
+    let token, i, l, lastToken, nextToken;
 
     while (src) {
       // newline
@@ -227,9 +227,13 @@ module.exports = class Lexer {
       }
 
       // top-level paragraph
-      if (top && (token = this.tokenizer.paragraph(src))) {
+      if (top && ([token, nextToken] = this.tokenizer.paragraph(src))) {
         src = src.substring(token.raw.length);
         tokens.push(token);
+        if(nextToken) {
+          src = src.substring(nextToken.raw.length);
+          tokens.push(nextToken);
+        }
         continue;
       }
 

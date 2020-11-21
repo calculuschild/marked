@@ -384,13 +384,26 @@ module.exports = class Tokenizer {
   paragraph(src) {
     const cap = this.rules.block.paragraph.exec(src);
     if (cap) {
-      return {
+      let nextToken;
+      if(cap[1]){
+        cap[0] = cap[0].slice(0,-cap[1].length);
+        switch (cap[1]) {
+          case cap[2]: nextToken = this.hr(cap[1]); break;
+          case cap[3]: nextToken = this.heading(cap[1]); break;
+          case cap[4]: nextToken = this.lheading(cap[1]); break;
+          case cap[5]: nextToken = this.blockquote(cap[1]); break;
+          case cap[6]: nextToken = this.fences(cap[1]); break;
+          case cap[7]: nextToken = this.list(cap[1]); break;
+          case cap[8]: nextToken = this.html(cap[1]); break;
+        }
+      }
+      return [{
         type: 'paragraph',
         raw: cap[0],
-        text: cap[1].charAt(cap[1].length - 1) === '\n'
-          ? cap[1].slice(0, -1)
-          : cap[1]
-      };
+        text: cap[0].charAt(cap[0].length - 1) === '\n'
+          ? cap[0].slice(0, -1)
+          : cap[0]
+      }, ];
     }
   }
 
