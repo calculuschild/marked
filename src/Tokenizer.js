@@ -457,52 +457,52 @@ module.exports = class Tokenizer {
   link(src) {
     const cap = this.rules.inline.link.exec(src);
     if (cap) {
-      const trimmedUrl = cap[2].trim();
-      if (!this.options.pedantic && trimmedUrl.startsWith('<')) {
-        // commonmark requires matching angle brackets
-        if (!trimmedUrl.endsWith('>')) {
-          return;
-        }
-
-        // ending angle bracket cannot be escaped
-        const rtrimSlash = rtrim(trimmedUrl.slice(0, -1), '\\');
-        if ((trimmedUrl.length - rtrimSlash.length) % 2 === 0) {
-          return;
-        }
-      } else {
+      let href = cap[2].trim();
+      if (!href.startsWith('<')) {
         // find closing parenthesis
         const lastParenIndex = findClosingBracket(cap[2], '()');
         if (lastParenIndex > -1) {
           const start = cap[0].indexOf('!') === 0 ? 5 : 4;
           const linkLen = start + cap[1].length + lastParenIndex;
-          cap[2] = cap[2].substring(0, lastParenIndex);
+          href = cap[2].substring(0, lastParenIndex);
           cap[0] = cap[0].substring(0, linkLen).trim();
           cap[3] = '';
         }
       }
-      let href = cap[2];
-      let title = '';
+
+      let title = cap[3] ? cap[3].slice(1, -1) : '';
+
       if (this.options.pedantic) {
+        // pedantic allows starting angle bracket without ending angle bracket
+        if (href.startsWith('<') && !href.endsWith('>')) {
+          href = href.slice(1);
+        }
+
         // split pedantic href and title
         const link = /^([^'"]*[^\s])\s+(['"])(.*)\2/.exec(href);
-
         if (link) {
           href = link[1];
           title = link[3];
         }
       } else {
-        title = cap[3] ? cap[3].slice(1, -1) : '';
-      }
+        if (href.startsWith('<')) {
+          // commonmark requires matching angle brackets
+          if (!href.endsWith('>')) {
+            return;
+          }
 
-      href = href.trim();
-      if (href.startsWith('<')) {
-        if (this.options.pedantic && !trimmedUrl.endsWith('>')) {
-          // pedantic allows starting angle bracket without ending angle bracket
-          href = href.slice(1);
-        } else {
-          href = href.slice(1, -1);
+          // ending angle bracket cannot be escaped
+          const rtrimSlash = rtrim(href.slice(0, -1), '\\');
+          if ((href.length - rtrimSlash.length) % 2 === 0) {
+            return;
+          }
         }
       }
+
+      if (href.startsWith('<') && href.endsWith('>')) {
+        href = href.slice(1, -1);
+      }
+
       return outputLink(cap, {
         href: href ? href.replace(this.rules.inline._escapes, '$1') : href,
         title: title ? title.replace(this.rules.inline._escapes, '$1') : title
