@@ -75,35 +75,35 @@ module.exports = class Lexer {
     this.tokenizer.rules = rules;
 
     this.blockTokenizers = [
-      { name: 'newline', func: this.newline },
-      { name: 'code', func: this.code },
-      { name: 'fences', func: this.fences },
-      { name: 'nptable', func: this.nptable },
-      { name: 'heading', func: this.heading },
-      { name: 'hr', func: this.hr },
-      { name: 'blockquote', func: this.blockquote },
-      { name: 'list', func: this.list },
-      { name: 'html', func: this.html },
-      { name: 'def', func: this.def },
-      { name: 'table', func: this.table },
-      { name: 'lheading', func: this.lheading },
-      { name: 'paragraph', func: this.paragraph },
-      { name: 'text', func: this.text }
+      { name: 'newline', func: this.tokenizer.space.bind(this.tokenizer), context: this.tokenizer },
+      { name: 'code', func: this.tokenizer.code.bind(this.tokenizer), context: this.tokenizer },
+      { name: 'fences', func: this.tokenizer.fences.bind(this.tokenizer), context: this.tokenizer },
+      { name: 'nptable', func: this.tokenizer.nptable.bind(this.tokenizer), context: this.tokenizer },
+      { name: 'heading', func: this.tokenizer.heading.bind(this.tokenizer), context: this.tokenizer },
+      { name: 'hr', func: this.tokenizer.hr.bind(this.tokenizer), context: this.tokenizer },
+      { name: 'blockquote', func: this.blockquote.bind(this), context: this },
+      { name: 'list', func: this.list.bind(this), context: this },
+      { name: 'html', func: this.tokenizer.html.bind(this.tokenizer), context: this.tokenizer },
+      { name: 'def', func: this.def.bind(this), context: this },
+      { name: 'table', func: this.tokenizer.table.bind(this.tokenizer), context: this.tokenizer },
+      { name: 'lheading', func: this.tokenizer.lheading.bind(this.tokenizer), context: this.tokenizer },
+      { name: 'paragraph', func: this.paragraph.bind(this), context: this },
+      { name: 'text', func: this.tokenizer.text.bind(this.tokenizer), context: this.tokenizer }
     ];
 
     this.inlineTokenizers = [
-      { name: 'escape', func: this.escape },
-      { name: 'tag', func: this.tag },
-      { name: 'link', func: this.link },
-      { name: 'reflink', func: this.reflink },
-      { name: 'strong', func: this.strong },
-      { name: 'em', func: this.em },
-      { name: 'codespan', func: this.codespan },
-      { name: 'br', func: this.br },
-      { name: 'del', func: this.del },
-      { name: 'autolink', func: this.autolink },
-      { name: 'url', func: this.url },
-      { name: 'inlineText', func: this.inlineText }
+      { name: 'escape', func: this.tokenizer.escape, context: this.tokenizer },
+      { name: 'tag', func: this.tag, context: this },
+      { name: 'link', func: this.link, context: this },
+      { name: 'reflink', func: this.reflink, context: this },
+      { name: 'strong', func: this.strong, context: this },
+      { name: 'em', func: this.em, context: this },
+      { name: 'codespan', func: this.tokenizer.codespan, context: this.tokenizer },
+      { name: 'br', func: this.tokenizer.br, context: this.tokenizer },
+      { name: 'del', func: this.tokenizer.del, context: this.tokenizer },
+      { name: 'autolink', func: this.tokenizer.autolink, context: this.tokenizer },
+      { name: 'url', func: this.url, context: this },
+      { name: 'inlineText', func: this.inlineText, context: this }
     ];
   }
 
@@ -153,54 +153,6 @@ module.exports = class Lexer {
    */
 
   //= === Block tokenizers ====//
-  // newline
-  newline(src, params) {
-    let token;
-    if (token = this.tokenizer.space(src)) {
-      return token;
-    }
-  }
-
-  // code
-  code(src, params) {
-    let token;
-    if (token = this.tokenizer.code(src, params.lastToken)) {
-      return token;
-    }
-  }
-
-  // fences
-  fences(src, params) {
-    let token;
-    if (token = this.tokenizer.fences(src)) {
-      return token;
-    }
-  }
-
-  // table no leading pipe (gfm)
-  nptable(src, params) {
-    let token;
-    if (token = this.tokenizer.nptable(src)) {
-      return token;
-    }
-  }
-
-  // heading
-  heading(src, params) {
-    let token;
-    if (token = this.tokenizer.heading(src)) {
-      return token;
-    }
-  }
-
-  // hr
-  hr(src, params) {
-    let token;
-    if (token = this.tokenizer.hr(src)) {
-      return token;
-    }
-  }
-
   // blockquote
   blockquote(src, params) {
     let token;
@@ -223,14 +175,6 @@ module.exports = class Lexer {
     }
   }
 
-  // html
-  html(src, params) {
-    let token;
-    if (token = this.tokenizer.html(src)) {
-      return token;
-    }
-  }
-
   // def
   def(src, params) {
     let token;
@@ -245,34 +189,10 @@ module.exports = class Lexer {
     }
   }
 
-  // table (gfm)
-  table(src, params) {
-    let token;
-    if (token = this.tokenizer.table(src)) {
-      return token;
-    }
-  }
-
-  // lheading
-  lheading(src, params) {
-    let token;
-    if (token = this.tokenizer.lheading(src, params)) {
-      return token;
-    }
-  }
-
   // top-level paragraph
   paragraph(src, params) {
     let token;
     if (params.top && (token = this.tokenizer.paragraph(src))) {
-      return token;
-    }
-  }
-
-  // text
-  text(src, params) {
-    let token;
-    if (token = this.tokenizer.text(src, params.lastToken)) {
       return token;
     }
   }
@@ -287,7 +207,7 @@ module.exports = class Lexer {
     };
 
     while (src) {
-      if (this.blockTokenizers.some(function(fn) { return token = fn.func.call(this, src, blockParams); }, this)) {
+      if (this.blockTokenizers.some(fn => token = fn.func(src, blockParams))) {
         src = src.substring(token.raw.length);
         if (token.type) {
           if (token.type === 'continue') {
@@ -381,14 +301,6 @@ module.exports = class Lexer {
   }
 
   //= === Inline Tokenizers ====//
-  // escape
-  escape(src, params) {
-    let token;
-    if (token = this.tokenizer.escape(src)) {
-      return token;
-    }
-  }
-
   // tag
   tag(src, params) {
     let token;
@@ -404,6 +316,7 @@ module.exports = class Lexer {
     let token;
     if (token = this.tokenizer.link(src)) {
       if (token.type === 'link') {
+        params.inLink = true;
         token.tokens = this.inlineTokens(token.text, [], true, params.inRawBlock);
       }
       return token;
@@ -415,62 +328,30 @@ module.exports = class Lexer {
     let token;
     if (token = this.tokenizer.reflink(src, this.tokens.links)) {
       if (token.type === 'link') {
+        params.inLink === true;
         token.tokens = this.inlineTokens(token.text, [], true, params.inRawBlock);
       }
       return token;
     }
   }
 
-  // strong
-  strong(src, params) {
-    let token;
-    if (token = this.tokenizer.strong(src, params.maskedSrc, params.prevChar)) {
-      token.tokens = this.inlineTokens(token.text, [], params.inLink, params.inRawBlock);
-      return token;
-    }
+// strong
+strong(src, params) {
+  let token;
+  if (token = this.tokenizer.strong(src, params)) {
+    token.tokens = this.inlineTokens(token.text, [], params.inLink, params.inRawBlock);
+    return token;
   }
+}
 
-  // em
-  em(src, params) {
-    let token;
-    if (token = this.tokenizer.em(src, params.maskedSrc, params.prevChar)) {
-      token.tokens = this.inlineTokens(token.text, [], params.inLink, params.inRawBlock);
-      return token;
-    }
+// em
+em(src, params) {
+  let token;
+  if (token = this.tokenizer.em(src, params)) {
+    token.tokens = this.inlineTokens(token.text, [], params.inLink, params.inRawBlock);
+    return token;
   }
-
-  // code
-  codespan(src, params) {
-    let token;
-    if (token = this.tokenizer.codespan(src)) {
-      return token;
-    }
-  }
-
-  // br
-  br(src, params) {
-    let token;
-    if (token = this.tokenizer.br(src)) {
-      return token;
-    }
-  }
-
-  // del (gfm)
-  del(src, params) {
-    let token;
-    if (token = this.tokenizer.del(src)) {
-      token.tokens = this.inlineTokens(token.text, [], params.inLink, params.inRawBlock);
-      return token;
-    }
-  }
-
-  // autolink
-  autolink(src, params) {
-    let token;
-    if (token = this.tokenizer.autolink(src, params.mangle)) {
-      return token;
-    }
-  }
+}
 
   // url (gfm)
   url(src, params) {
@@ -481,7 +362,7 @@ module.exports = class Lexer {
   }
 
   // text
-  inlineText(src, params) {
+  inlineText = function(src, params) {
     let token;
     if (token = this.tokenizer.inlineText(src, params.inRawBlock, params.smartypants)) {
       params.prevChar = token.raw.slice(-1);
@@ -530,8 +411,12 @@ module.exports = class Lexer {
       }
       inlineParams.keepPrevChar = false;
 
-      if (this.inlineTokenizers.some(function(fn) { return token = fn.func.call(this, src, inlineParams); }, this)) {
+      if (this.inlineTokenizers.some(fn => token = fn.func.call(fn.context, src, inlineParams))) {
         src = src.substring(token.raw.length);
+        // if(token.tokens && !token.tokens.length) {
+        //   //console.log(token.tokens);
+        //   token.tokens = this.inlineTokens(token.text, [], inlineParams.inLink, inlineParams.inRawBlock);
+        // }
         tokens.push(token);
         continue;
       }

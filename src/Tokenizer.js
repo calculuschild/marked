@@ -17,6 +17,7 @@ function outputLink(cap, link, raw) {
       raw,
       href,
       title,
+      tokens: [],
       text
     };
   } else {
@@ -79,11 +80,11 @@ module.exports = class Tokenizer {
     }
   }
 
-  code(src, lastToken) {
+  code(src, params) {
     const cap = this.rules.block.code.exec(src);
     if (cap) {
       // An indented code block cannot interrupt a paragraph.
-      if (lastToken && lastToken.type === 'paragraph') {
+      if (params.lastToken && params.lastToken.type === 'paragraph') {
         return {
           type: 'continue',
           raw: cap[0],
@@ -407,10 +408,10 @@ module.exports = class Tokenizer {
     }
   }
 
-  text(src, lastToken) {
+  text(src, params) {
     const cap = this.rules.block.text.exec(src);
     if (cap) {
-      if (lastToken && lastToken.type === 'text') {
+      if (params.lastToken && params.lastToken.type === 'text') {
         return {
           type: 'continue',
           raw: cap[0],
@@ -427,6 +428,7 @@ module.exports = class Tokenizer {
   }
 
   escape(src) {
+    //console.log(this);
     const cap = this.rules.inline.escape.exec(src);
     if (cap) {
       return {
@@ -541,7 +543,8 @@ module.exports = class Tokenizer {
     }
   }
 
-  strong(src, maskedSrc, prevChar = '') {
+  strong(src, params) {
+    let [prevChar, maskedSrc] = [params.prevChar, params.maskedSrc];
     let match = this.rules.inline.strong.start.exec(src);
 
     if (match && (!match[1] || (match[1] && (prevChar === '' || this.rules.inline.punctuation.exec(prevChar))))) {
@@ -557,14 +560,16 @@ module.exports = class Tokenizer {
           return {
             type: 'strong',
             raw: src.slice(0, cap[0].length),
-            text: src.slice(2, cap[0].length - 2)
+            text: src.slice(2, cap[0].length - 2),
+            tokens: []
           };
         }
       }
     }
   }
 
-  em(src, maskedSrc, prevChar = '') {
+  em(src, params) {
+    let [prevChar, maskedSrc] = [params.prevChar, params.maskedSrc];
     let match = this.rules.inline.em.start.exec(src);
 
     if (match && (!match[1] || (match[1] && (prevChar === '' || this.rules.inline.punctuation.exec(prevChar))))) {
@@ -580,7 +585,8 @@ module.exports = class Tokenizer {
           return {
             type: 'em',
             raw: src.slice(0, cap[0].length),
-            text: src.slice(1, cap[0].length - 1)
+            text: src.slice(1, cap[0].length - 1),
+            tokens: []
           };
         }
       }
@@ -621,17 +627,18 @@ module.exports = class Tokenizer {
       return {
         type: 'del',
         raw: cap[0],
-        text: cap[2]
+        text: cap[2],
+        tokens: []
       };
     }
   }
 
-  autolink(src, mangle) {
+  autolink(src, params) {
     const cap = this.rules.inline.autolink.exec(src);
     if (cap) {
       let text, href;
       if (cap[2] === '@') {
-        text = escape(this.options.mangle ? mangle(cap[1]) : cap[1]);
+        text = escape(this.options.mangle ? params.mangle(cap[1]) : cap[1]);
         href = 'mailto:' + text;
       } else {
         text = escape(cap[1]);
