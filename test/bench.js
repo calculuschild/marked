@@ -5,6 +5,9 @@ const { loadFiles } = require('./helpers/load.js');
 let marked = require('../lib/marked.js');
 const es6marked = require('../src/marked.js');
 
+const Benchmark = require('benchmark');
+let suite = new Benchmark.Suite;
+
 /**
  * Load specs
  */
@@ -38,7 +41,7 @@ async function runBench(options) {
   if (options.marked) {
     marked.setOptions(options.marked);
   }
-  await bench('es5 marked', specs, marked);
+  suite.add('es5 marked', function() {newBench(specs, marked);});
 
   es6marked.setOptions({
     gfm: false,
@@ -50,7 +53,8 @@ async function runBench(options) {
   if (options.marked) {
     es6marked.setOptions(options.marked);
   }
-  await bench('es6 marked', specs, es6marked);
+  suite.add('es6 marked', function() {newBench(specs, es6marked);});
+  //await bench('es6 marked', specs, es6marked);
 
   // GFM
   marked.setOptions({
@@ -63,7 +67,8 @@ async function runBench(options) {
   if (options.marked) {
     marked.setOptions(options.marked);
   }
-  await bench('es5 marked (gfm)', specs, marked);
+  suite.add('es5 marked (gfm)', function() {newBench(specs, marked);});
+  //await bench('es5 marked (gfm)', specs, marked);
 
   es6marked.setOptions({
     gfm: true,
@@ -75,7 +80,8 @@ async function runBench(options) {
   if (options.marked) {
     es6marked.setOptions(options.marked);
   }
-  await bench('es6 marked (gfm)', specs, es6marked);
+  suite.add('es6 marked (gfm)', function() {newBench(specs, es6marked);});
+  //await bench('es6 marked (gfm)', specs, es6marked);
 
   // Pedantic
   marked.setOptions({
@@ -88,7 +94,8 @@ async function runBench(options) {
   if (options.marked) {
     marked.setOptions(options.marked);
   }
-  await bench('es5 marked (pedantic)', specs, marked);
+  suite.add('es5 marked (pedantic)', function() {newBench(specs, marked);});
+  //await bench('es5 marked (pedantic)', specs, marked);
 
   es6marked.setOptions({
     gfm: false,
@@ -100,37 +107,65 @@ async function runBench(options) {
   if (options.marked) {
     es6marked.setOptions(options.marked);
   }
-  await bench('es6 marked (pedantic)', specs, es6marked);
+  suite.add('es6 marked (pedantic)', function() {newBench(specs, es6marked);});
+  //await bench('es6 marked (pedantic)', specs, es6marked);
 
-  try {
-    await bench('commonmark', specs, (() => {
-      const commonmark = require('commonmark');
-      const parser = new commonmark.Parser();
-      const writer = new commonmark.HtmlRenderer();
-      return function(text) {
-        return writer.render(parser.parse(text));
-      };
-    })());
-  } catch (e) {
-    console.error('Could not bench commonmark. (Error: %s)', e.message);
-  }
 
-  try {
-    await bench('markdown-it', specs, (() => {
-      const MarkdownIt = require('markdown-it');
-      const md = new MarkdownIt();
-      return md.render.bind(md);
-    })());
-  } catch (e) {
-    console.error('Could not bench markdown-it. (Error: %s)', e.message);
+
+  // run async
+
+  const commonmark = require('commonmark');
+  const parser = new commonmark.Parser();
+  const writer = new commonmark.HtmlRenderer();
+
+  const commonmarkEngine = function(text) {
+    return writer.render(parser.parse(text));
+  };
+
+  suite.add('commonmark',
+            function() {newBench(specs, commonmarkEngine);},
+            {'onError': function(e) {console.log('Could not bench commonmark. (Error: %s)', e.target.error);}}
+          );
+
+  const MarkdownIt = require('markdown-it');
+  const md = new MarkdownIt();
+
+  const markdownItEngine = md.render.bind(md);
+
+  suite.add('markdown-it',
+            function() {newBench(specs, markdownItEngine);},
+            {'onError': function(e) {console.log('Could not bench markdown-it. (Error: %s)', e.target.error);}}
+          );
+
+  // add listeners
+  suite.on('cycle', function(event) {
+    //console.log(event);
+    console.log(String(event.target));
+  })
+  .on('complete', function() {
+    console.log('Fastest is ' + this.filter('fastest').map('name'));
+    console.log("Compared to commonmark.js: (Lower is better)");
+    const best = this.filter('fastest')[0].hz;
+    console.log(this.map(bench => `${bench.name} : ${best/bench.hz}`).join('\n'));
+  })
+  .on('error', function(event) {
+    console.log(event.target.error);
+  });
+  await suite.run({ 'async': true });
+
+}
+
+function newBench(specs, engine) {
+  for (const spec of specs) {
+    engine(spec.markdown);
   }
 }
 
 async function bench(name, specs, engine) {
   const before = process.hrtime();
   for (let i = 0; i < 1e3; i++) {
-    for (const spec of specs) {
-      await engine(spec.markdown);
+  for (const spec of specs) {
+    await engine(spec.markdown);
     }
   }
   const elapsed = process.hrtime(before);
