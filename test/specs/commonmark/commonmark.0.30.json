@@ -195,7 +195,7 @@
   },
   {
     "markdown": "&nbsp; &amp; &copy; &AElig; &Dcaron;\n&frac34; &HilbertSpace; &DifferentialD;\n&ClockwiseContourIntegral; &ngE;\n",
-    "html": "<p>  &amp; © Æ Ď\n¾ ℋ ⅆ\n∲ ≧̸</p>\n",
+    "html": "<p>  &amp; © Æ Ď\n¾ ℋ ⅆ\n∲ ≧̸</p>\n",
     "example": 25,
     "start_line": 650,
     "end_line": 658,
@@ -2670,16 +2670,16 @@
     "section": "Code spans"
   },
   {
-    "markdown": "` b `\n",
-    "html": "<p><code> b </code></p>\n",
+    "markdown": "` b `\n",
+    "html": "<p><code> b </code></p>\n",
     "example": 333,
     "start_line": 5937,
     "end_line": 5941,
     "section": "Code spans"
   },
   {
-    "markdown": "` `\n`  `\n",
-    "html": "<p><code> </code>\n<code>  </code></p>\n",
+    "markdown": "` `\n`  `\n",
+    "html": "<p><code> </code>\n<code>  </code></p>\n",
     "example": 334,
     "start_line": 5945,
     "end_line": 5951,
@@ -2830,8 +2830,8 @@
     "section": "Emphasis and strong emphasis"
   },
   {
-    "markdown": "* a *\n",
-    "html": "<p>* a *</p>\n",
+    "markdown": "* a *\n",
+    "html": "<p>* a *</p>\n",
     "example": 353,
     "start_line": 6342,
     "end_line": 6346,
@@ -4056,7 +4056,7 @@
     "section": "Links"
   },
   {
-    "markdown": "[link](/url \"title\")\n",
+    "markdown": "[link](/url \"title\")\n",
     "html": "<p><a href=\"/url%C2%A0%22title%22\">link</a></p>\n",
     "example": 506,
     "start_line": 7765,
