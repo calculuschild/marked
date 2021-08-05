@@ -164,12 +164,13 @@ module.exports = class Lexer {
         lastToken = tokens[tokens.length - 1];
         // An indented code block cannot interrupt a paragraph.
         if (lastToken && (lastToken.type === 'paragraph' || lastToken.type === 'text')) {
+          // console.log({mergeCode : token});
+          // console.log({lastToken : lastToken});
+          // console.log({inlineQueue : this.inlineQueue});
           lastToken.raw += '\n' + token.raw;
           lastToken.text += '\n' + token.text;
-          if(lastToken.type === 'paragraph') {
-            this.inlineQueue.pop();
-            this.inlineQueue[this.inlineQueue.length - 1].src = lastToken.text;
-          }
+          //this.inlineQueue.pop();
+          this.inlineQueue[this.inlineQueue.length - 1].src = lastToken.text;
         } else {
           tokens.push(token);
         }

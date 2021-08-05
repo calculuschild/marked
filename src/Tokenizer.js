@@ -241,7 +241,6 @@ module.exports = class Tokenizer {
               blankLine = true;
             }
 
-            console.log({indent : indent});
             // Dedent if possible
             if (line.search(/[^ ]/) >= indent) {
               itemContents += '\n' + line.slice(indent);
@@ -307,7 +306,7 @@ module.exports = class Tokenizer {
       list.items[list.items.length - 1].text = itemContents.trimRight();
       list.raw = list.raw.trimRight();
 
-      console.log(list);
+      //console.log(list);
 
       return list;
     }
