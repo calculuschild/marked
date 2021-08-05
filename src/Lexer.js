@@ -163,11 +163,13 @@ module.exports = class Lexer {
         src = src.substring(token.raw.length);
         lastToken = tokens[tokens.length - 1];
         // An indented code block cannot interrupt a paragraph.
-        if (lastToken && lastToken.type === 'paragraph') {
+        if (lastToken && (lastToken.type === 'paragraph' || lastToken.type === 'text')) {
           lastToken.raw += '\n' + token.raw;
           lastToken.text += '\n' + token.text;
-          this.inlineQueue.pop();
-          this.inlineQueue[this.inlineQueue.length - 1].src = lastToken.text;
+          if(lastToken.type === 'paragraph') {
+            this.inlineQueue.pop();
+            this.inlineQueue[this.inlineQueue.length - 1].src = lastToken.text;
+          }
         } else {
           tokens.push(token);
         }
@@ -217,13 +219,21 @@ module.exports = class Lexer {
       }
 
       // def
-      if (this.state.top && (token = this.tokenizer.def(src))) {
+      if (token = this.tokenizer.def(src)) {
         src = src.substring(token.raw.length);
-        if (!this.tokens.links[token.tag]) {
-          this.tokens.links[token.tag] = {
-            href: token.href,
-            title: token.title
-          };
+        lastToken = tokens[tokens.length - 1];
+        if (lastToken && (lastToken.type === 'paragraph' || lastToken.type === 'text')) {
+          lastToken.raw += '\n' + token.raw;
+          lastToken.text += '\n' + token.raw;
+          this.inlineQueue.pop(); // Not needed? ?!
+          this.inlineQueue[this.inlineQueue.length - 1].src = lastToken.text; // Not needed ? ?!
+        } else {
+          if (!this.tokens.links[token.tag]) {
+            this.tokens.links[token.tag] = {
+              href: token.href,
+              title: token.title
+            };
+          }
         }
         continue;
       }

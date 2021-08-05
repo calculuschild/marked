@@ -17,6 +17,12 @@ function expectInlineTokens({ md, options, tokens = jasmine.any(Array), links = 
   expect(outTokens).toEqual(tokens);
 }
 
+function expectInline({ token, options, tokens }) {
+  const lexer = new Lexer(options);
+  lexer.inline([token]);
+  expect(token.tokens).toEqual(tokens);
+}
+
 describe('Lexer', () => {
   describe('paragraph', () => {
     it('space between paragraphs', () => {
@@ -295,7 +301,7 @@ a | b
         tokens: [
           {
             type: 'list',
-            raw: '- item 1\n- item 2\n',
+            raw: '- item 1\n- item 2',
             ordered: false,
             start: '',
             loose: false,
@@ -316,7 +322,7 @@ a | b
               },
               {
                 type: 'list_item',
-                raw: '- item 2\n',
+                raw: '- item 2',
                 task: false,
                 checked: undefined,
                 loose: false,
@@ -343,7 +349,7 @@ a | b
         tokens: jasmine.arrayContaining([
           jasmine.objectContaining({
             type: 'list',
-            raw: '1. item 1\n2. item 2\n',
+            raw: '1. item 1\n2. item 2',
             ordered: true,
             start: 1,
             items: [
@@ -351,7 +357,7 @@ a | b
                 raw: '1. item 1\n'
               }),
               jasmine.objectContaining({
-                raw: '2. item 2\n'
+                raw: '2. item 2'
               })
             ]
           })
@@ -368,7 +374,7 @@ a | b
         tokens: jasmine.arrayContaining([
           jasmine.objectContaining({
             type: 'list',
-            raw: '1) item 1\n2) item 2\n',
+            raw: '1) item 1\n2) item 2',
             ordered: true,
             start: 1,
             items: [
@@ -376,7 +382,7 @@ a | b
                 raw: '1) item 1\n'
               }),
               jasmine.objectContaining({
-                raw: '2) item 2\n'
+                raw: '2) item 2'
               })
             ]
           })
@@ -395,7 +401,7 @@ paragraph
         tokens: [
           {
             type: 'list',
-            raw: '- item 1\n- item 2\n\n',
+            raw: '- item 1\n- item 2',
             ordered: false,
             start: '',
             loose: false,
@@ -416,7 +422,7 @@ paragraph
               },
               {
                 type: 'list_item',
-                raw: '- item 2\n\n',
+                raw: '- item 2',
                 task: false,
                 checked: undefined,
                 loose: false,
@@ -430,6 +436,7 @@ paragraph
               }
             ]
           },
+          { type: 'space', raw: '\n\n' },
           {
             type: 'paragraph',
             raw: 'paragraph',
@@ -453,7 +460,7 @@ paragraph
         tokens: jasmine.arrayContaining([
           jasmine.objectContaining({
             type: 'list',
-            raw: '2. item 1\n3. item 2\n',
+            raw: '2. item 1\n3. item 2',
             ordered: true,
             start: 2,
             items: [
@@ -461,7 +468,7 @@ paragraph
                 raw: '2. item 1\n'
               }),
               jasmine.objectContaining({
-                raw: '3. item 2\n'
+                raw: '3. item 2'
               })
             ]
           })
@@ -479,14 +486,14 @@ paragraph
         tokens: jasmine.arrayContaining([
           jasmine.objectContaining({
             type: 'list',
-            raw: '- item 1\n\n- item 2\n',
+            raw: '- item 1\n\n- item 2',
             loose: true,
             items: [
               jasmine.objectContaining({
                 raw: '- item 1\n\n'
               }),
               jasmine.objectContaining({
-                raw: '- item 2\n'
+                raw: '- item 2'
               })
             ]
           })
@@ -503,7 +510,7 @@ paragraph
         tokens: jasmine.arrayContaining([
           jasmine.objectContaining({
             type: 'list',
-            raw: '- [ ] item 1\n- [x] item 2\n',
+            raw: '- [ ] item 1\n- [x] item 2',
             items: [
               jasmine.objectContaining({
                 raw: '- [ ] item 1\n',
@@ -511,7 +518,7 @@ paragraph
                 checked: false
               }),
               jasmine.objectContaining({
-                raw: '- [x] item 2\n',
+                raw: '- [x] item 2',
                 task: true,
                 checked: true
               })
@@ -593,6 +600,65 @@ paragraph
   });
 
   describe('inline', () => {
+    describe('inline', () => {
+      it('paragraph', () => {
+        expectInline({
+          token: { type: 'paragraph', text: 'text' },
+          tokens: [
+            { type: 'text', raw: 'text', text: 'text' }
+          ]
+        });
+      });
+
+      it('text', () => {
+        expectInline({
+          token: { type: 'text', text: 'text' },
+          tokens: [
+            { type: 'text', raw: 'text', text: 'text' }
+          ]
+        });
+      });
+
+      it('heading', () => {
+        expectInline({
+          token: { type: 'heading', text: 'text' },
+          tokens: [
+            { type: 'text', raw: 'text', text: 'text' }
+          ]
+        });
+      });
+
+      it('table', () => {
+        expectInline({
+          token: {
+            type: 'table',
+            header: ['a', 'b'],
+            align: [null, null],
+            cells: [['1', '2']]
+          },
+          tokens: {
+            header: [
+              [{ type: 'text', raw: 'a', text: 'a' }],
+              [{ type: 'text', raw: 'b', text: 'b' }]
+            ],
+            cells: [
+              [
+                [{ type: 'text', raw: '1', text: '1' }],
+                [{ type: 'text', raw: '2', text: '2' }]
+              ]
+            ]
+          }
+        });
+      });
+
+      it('code no inline tokens', () => {
+        expectInline({
+          token: { type: 'code', text: 'code' },
+          tokens: undefined
+        });
+      });
+    });
+
     describe('inlineTokens', () => {
       it('escape', () => {
         expectInlineTokens({
