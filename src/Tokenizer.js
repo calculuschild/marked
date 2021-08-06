@@ -166,7 +166,7 @@ module.exports = class Tokenizer {
   list(src) {
     let cap = this.rules.block.list.exec(src);
     if (cap) {
-      let raw, istask, ischecked, indent, i, blankLine, endsWithBlankLine,
+      let raw, istask, ischecked, indent, i, l, blankLine, endsWithBlankLine,
         line, lines, itemContents;
 
       let bull = cap[1].trim();
@@ -278,35 +278,35 @@ module.exports = class Tokenizer {
           }
         }
 
-        this.lexer.state.top = false;
-
-        const listItem = {
+        list.items.push({
           type: 'list_item',
           raw: raw,
           task: !!istask,
           checked: ischecked,
           loose: false,
-          text: itemContents,
-          tokens : this.lexer.blockTokens(itemContents, [])
-        }
-
-        if (listItem.tokens.some(t => t.type === 'space')) {
-          list.loose = true;
-          listItem.loose = true;
-        }
-
-        list.items.push(listItem);
+          text: itemContents
+        });
 
         list.raw += raw;
         src = src.slice(raw.length);
       }
 
-      // Do not consume ending newlines. Alternatively, make itemRegex *start* with any newlines to simplify/speed up endsWithBlankLine logic
+      // Do not consume newlines at end of final item. Alternatively, make itemRegex *start* with any newlines to simplify/speed up endsWithBlankLine logic
       list.items[list.items.length - 1].raw = raw.trimRight();
       list.items[list.items.length - 1].text = itemContents.trimRight();
       list.raw = list.raw.trimRight();
 
-      //console.log(list);
+      l = list.items.length;
+
+      // Item child tokens handled here at end because we needed to have the final item to trim it first
+      for (i = 0; i < l; i++) {
+        this.lexer.state.top = false;
+        list.items[i].tokens = this.lexer.blockTokens(list.items[i].text, []);
+        if (list.items[i].tokens.some(t => t.type === 'space')) {
+          list.loose = true;
+          list.items[i].loose = true;
+        }
+      }
 
       return list;
     }
