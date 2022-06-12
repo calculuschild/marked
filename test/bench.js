@@ -42,7 +42,11 @@ export async function runBench(options) {
   if (options.marked) {
     marked.setOptions(options.marked);
   }
-  await bench('cjs marked', specs, marked.parse);
+  if(options.detailed) {
+    await benchProfiler('cjs marked', specs, marked.parse);
+  }
+  else
+    await bench('cjs marked', specs, marked.parse);
 
   esmMarked.setOptions({
     gfm: false,
@@ -54,7 +58,11 @@ export async function runBench(options) {
   if (options.marked) {
     esmMarked.setOptions(options.marked);
   }
-  await bench('esm marked', specs, esmMarked.parse);
+  if(options.detailed) {
+    // await benchProfiler('esm marked', specs, esmMarked.parse);
+  }
+  else
+    await bench('esm marked', specs, esmMarked.parse);
 
   // GFM
   marked.setOptions({
@@ -67,7 +75,11 @@ export async function runBench(options) {
   if (options.marked) {
     marked.setOptions(options.marked);
   }
-  await bench('cjs marked (gfm)', specs, marked.parse);
+  if(options.detailed) {
+    // await benchProfiler('cjs marked (gfm)', specs, marked.parse);
+  }
+  else
+    await bench('cjs marked (gfm)', specs, marked.parse);
 
   esmMarked.setOptions({
     gfm: true,
@@ -79,7 +91,11 @@ export async function runBench(options) {
   if (options.marked) {
     esmMarked.setOptions(options.marked);
   }
-  await bench('esm marked (gfm)', specs, esmMarked.parse);
+  if(options.detailed) {
+    // await benchProfiler('esm marked (gfm)', specs, esmMarked.parse);
+  }
+  else
+    await bench('esm marked (gfm)', specs, esmMarked.parse);
 
   // Pedantic
   marked.setOptions({
@@ -92,7 +108,11 @@ export async function runBench(options) {
   if (options.marked) {
     marked.setOptions(options.marked);
   }
-  await bench('cjs marked (pedantic)', specs, marked.parse);
+  if(options.detailed) {
+    // await benchProfiler('cjs marked (pedantic)', specs, marked.parse);
+  }
+  else
+    await bench('cjs marked (pedantic)', specs, marked.parse);
 
   esmMarked.setOptions({
     gfm: false,
@@ -104,29 +124,72 @@ export async function runBench(options) {
   if (options.marked) {
     esmMarked.setOptions(options.marked);
   }
-  await bench('esm marked (pedantic)', specs, esmMarked.parse);
+  if(options.detailed) {
+    // await benchProfiler('esm marked (pedantic)', specs, esmMarked.parse);
+  }
+  else
+    await bench('esm marked (pedantic)', specs, esmMarked.parse);
 
-  try {
-    await bench('commonmark', specs, (await (async() => {
-      const { Parser, HtmlRenderer } = await import('commonmark');
-      const parser = new Parser();
-      const writer = new HtmlRenderer();
-      return function(text) {
-        return writer.render(parser.parse(text));
-      };
-    })()));
-  } catch (e) {
-    console.error('Could not bench commonmark. (Error: %s)', e.message);
+  if(options.detailed) {
+    try {
+      await benchProfiler('commonmark', specs, (await (async() => {
+        const { Parser, HtmlRenderer } = await import('commonmark');
+        const parser = new Parser();
+        const writer = new HtmlRenderer();
+        return function(text) {
+          return writer.render(parser.parse(text));
+        };
+      })()));
+    } catch (e) {
+      console.error('Could not bench commonmark. (Error: %s)', e.message);
+    }
+  }
+  else {
+    try {
+      await bench('commonmark', specs, (await (async() => {
+        const { Parser, HtmlRenderer } = await import('commonmark');
+        const parser = new Parser();
+        const writer = new HtmlRenderer();
+        return function(text) {
+          return writer.render(parser.parse(text));
+        };
+      })()));
+    } catch (e) {
+      console.error('Could not bench commonmark. (Error: %s)', e.message);
+    }
   }
 
-  try {
-    await bench('markdown-it', specs, (await (async() => {
-      const MarkdownIt = (await import('markdown-it')).default;
-      const md = new MarkdownIt();
-      return md.render.bind(md);
-    })()));
-  } catch (e) {
-    console.error('Could not bench markdown-it. (Error: %s)', e.message);
+  if(options.detailed) {
+    // try {
+    //   await benchProfiler('markdown-it', specs, (await (async() => {
+    //     const MarkdownIt = (await import('markdown-it')).default;
+    //     const md = new MarkdownIt();
+    //     return md.render.bind(md);
+    //   })()));
+    // } catch (e) {
+    //   console.error('Could not bench markdown-it. (Error: %s)', e.message);
+    // }
+  }
+  else {
+    try {
+      await bench('markdown-it', specs, (await (async() => {
+        const MarkdownIt = (await import('markdown-it')).default;
+        const md = new MarkdownIt();
+        return md.render.bind(md);
+      })()))
+    } catch (e) {
+      console.error('Could not bench markdown-it. (Error: %s)', e.message);
+    }
+  }
+
+  if(options.detailed) {
+    specs.sort((a, b) => (a.time['cjs marked'] / a.time['commonmark'] < b.time['cjs marked'] / b.time['commonmark']) ? 1 : -1);
+    for (let i = 0; i < specs.length; i ++) {
+      const spec = specs[i];
+      spec.slowdownRatio = spec.time['cjs marked'] / spec.time['commonmark'];
+      //console.log(spec);
+      console.log(`${i+1}, ${spec.example}, ${spec.slowdownRatio}, ${spec.section}`);
+    }
   }
 }
 
@@ -142,13 +205,37 @@ export async function bench(name, specs, engine) {
 
   let correct = 0;
   for (const spec of specs) {
-    if (await isEqual(spec.html, await engine(spec.markdown))) {
+    if (await isEqual(html, await engine(spec.markdown))) {
       correct++;
     }
   }
   const percent = (correct / specs.length * 100).toFixed(2);
 
   console.log('%s completed in %sms and passed %s%', name, ms, percent);
+}
+
+export async function benchProfiler(name, specs, engine) {
+  for (const spec of specs) {
+    if (!spec.time)
+      spec.time = {};
+    let before = process.hrtime();
+    for (let i = 0; i < 3e3; i++) {
+      await engine(spec.markdown);
+    }
+    const elapsed = process.hrtime(before);
+    const ms = prettyElapsedTime(elapsed).toFixed();
+    spec.time[name] = ms;
+  }
+
+
+  //specs.sort((a, b) => (a.time[name] < b.time[name]) ? 1 : -1);
+
+
+
+  // console.log(specs[0]);
+  // console.log(specs[1]);
+  // console.log(specs[2]);
+
 }
 
 /**
@@ -208,6 +295,9 @@ function parseArg(argv) {
       case '-t':
       case '--time':
         options.time = true;
+        break;
+      case '--detailed':
+        options.detailed = true;
         break;
       case '-m':
       case '--minified':
